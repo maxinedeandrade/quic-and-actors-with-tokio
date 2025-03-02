@@ -1,0 +1,15 @@
+[package]
+name = "quic-and-actors-with-tokio"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenv = "0.15.0"
+log = "0.4.26"
+pretty_env_logger = "0.5.0"
+quinn = "0.11.6"
+rustls = { version = "0.23.23" }
+proto.workspace = true
+tokio = { version = "1.43.0", features = ["full"] }
+thiserror = "2.0.11"
+bitcode = "0.6.5"
