@@ -1,4 +1,4 @@
-use tokio::{io::AsyncReadExt, sync::mpsc};
+use tokio::{io::{AsyncReadExt, AsyncWriteExt}, sync::mpsc};
 
 use crate::{env, prelude::*};
 
@@ -12,7 +12,27 @@ struct SendActor {
 
 impl SendActor {
   async fn run(mut self) {
-    while let Some(msg) = self.rx.recv().await {}
+    while let Some(msg) = self.rx.recv().await {
+      self.send(msg).await;
+    }
+  }
+
+  async fn send(&mut self, message: proto::client::Message) {
+    let buffer = bitcode::encode(&message);
+
+    self
+      .stream
+      .write_u32_le(buffer.len() as u32)
+      .await
+      .expect("Failed to write u32 to stream");
+
+    self
+      .stream
+      .write_all(&buffer)
+      .await
+      .expect("Failed to write message to stream");
+
+    self.stream.flush().await.expect("Failed to flush stream");
   }
 }
 

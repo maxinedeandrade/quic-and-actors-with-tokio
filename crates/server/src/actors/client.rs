@@ -1,4 +1,7 @@
-use tokio::{io::AsyncReadExt, sync::mpsc};
+use tokio::{
+  io::{AsyncReadExt, AsyncWriteExt},
+  sync::mpsc,
+};
 
 use crate::prelude::*;
 
@@ -6,15 +9,33 @@ const DEFAULT_BUFFER_SIZE: usize = 1024 * 1024;
 const CHANNEL_SIZE: usize = 8;
 
 struct SendActor {
-  rx: mpsc::Receiver<proto::client::Message>,
+  rx: mpsc::Receiver<proto::server::Message>,
   stream: quinn::SendStream,
 }
 
 impl SendActor {
   async fn run(mut self) {
     while let Some(msg) = self.rx.recv().await {
-      todo!()
+      self.send(msg).await;
     }
+  }
+
+  async fn send(&mut self, message: proto::server::Message) {
+    let buffer = bitcode::encode(&message);
+
+    self
+      .stream
+      .write_u32_le(buffer.len() as u32)
+      .await
+      .expect("Failed to write u32 to stream");
+
+    self
+      .stream
+      .write_all(&buffer)
+      .await
+      .expect("Failed to write message to stream");
+
+    self.stream.flush().await.expect("Failed to flush stream");
   }
 }
 
@@ -55,7 +76,7 @@ impl RecvActor {
 }
 
 pub struct Handle {
-  tx: mpsc::Sender<proto::client::Message>,
+  tx: mpsc::Sender<proto::server::Message>,
 }
 
 impl Handle {
