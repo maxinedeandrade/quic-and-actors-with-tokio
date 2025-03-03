@@ -4,7 +4,7 @@ const CHANNEL_SIZE: usize = 8;
 
 struct Actor {
   stream: quinn::SendStream,
-  rx: mpsc::Receiver<proto::server::Message>,
+  rx: mpsc::Receiver<proto::client::Message>,
 }
 
 impl Actor {
@@ -14,7 +14,7 @@ impl Actor {
     }
   }
 
-  async fn send(&mut self, message: proto::server::Message) {
+  async fn send(&mut self, message: proto::client::Message) {
     let buffer = bitcode::encode(&message);
 
     self
@@ -27,9 +27,8 @@ impl Actor {
   }
 }
 
-#[derive(Clone)]
 pub struct Handle {
-  tx: mpsc::Sender<proto::server::Message>,
+  tx: mpsc::Sender<proto::client::Message>,
 }
 
 impl Handle {
@@ -39,5 +38,9 @@ impl Handle {
     tokio::spawn(Actor { stream, rx }.run());
 
     Self { tx }
+  }
+
+  pub async fn send(&self, message: proto::client::Message) {
+    self.tx.send(message).await.expect("Failed to send message");
   }
 }

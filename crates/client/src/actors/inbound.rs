@@ -1,23 +1,23 @@
-use tokio::{sync::mpsc, task};
+use super::dispatch;
+use tokio::task;
 
-const CHANNEL_SIZE: usize = 8;
-const BUFFER_SIZE: usize = 1024 * 8;
+const DEFAULT_BUFFER_SIZE: usize = 1024 * 8;
 
 struct Actor {
   stream: quinn::RecvStream,
-  dispatch: super::dispatch::Handle,
+  dispatch: dispatch::Handle,
 }
 
 impl Actor {
   async fn run(mut self) {
-    let mut buffer = Box::new([0u8; BUFFER_SIZE]);
+    let mut buffer = Box::new([0u8; DEFAULT_BUFFER_SIZE]);
 
     loop {
       match self
         .stream
         .read(buffer.as_mut())
         .await
-        .expect("Failed to read stream")
+        .expect("Failed to read from stream")
       {
         Some(0) | None => continue,
         Some(read) => {
@@ -36,7 +36,7 @@ pub struct Handle {
 }
 
 impl Handle {
-  pub fn new(stream: quinn::RecvStream, dispatch: super::dispatch::Handle) -> Self {
+  pub fn new(stream: quinn::RecvStream, dispatch: dispatch::Handle) -> Self {
     let actor = Actor { stream, dispatch };
 
     let join_handle = tokio::spawn(async move { actor.run().await });

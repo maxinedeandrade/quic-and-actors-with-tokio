@@ -12,11 +12,17 @@ impl Actor {
 
       let dispatch = self.dispatch.clone();
       tokio::spawn(async move {
-        let client = super::client::Handle::new(incoming, dispatch)
+        let (send, recv) = incoming
           .await
-          .expect("Failed to create client actor");
+          .expect("Failed to accept incoming connection")
+          .accept_bi()
+          .await
+          .expect("Failed to accept a bidirectional stream");
 
-        client.join().await;
+        let _outbound = super::outbound::Handle::new(send);
+        let inbound = super::inbound::Handle::new(recv, dispatch.clone());
+
+        inbound.join().await;
       });
     }
   }

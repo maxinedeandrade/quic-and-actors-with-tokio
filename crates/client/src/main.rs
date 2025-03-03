@@ -50,11 +50,18 @@ async fn main() -> prelude::Result<()> {
   };
 
   let dispatch = actors::dispatch::Handle::new();
-  let client = actors::client::Handle::new(endpoint.clone(), dispatch).await?;
 
-  client.send(proto::client::Message::Meow).await;
+  let connection = endpoint
+    .connect(env::get().server_addr, &env::get().server_name)?
+    .await?;
+  let (send, recv) = connection.open_bi().await?;
 
-  client.join().await;
+  let inbound = actors::inbound::Handle::new(recv, dispatch);
+  let outbound = actors::outbound::Handle::new(send);
+
+  outbound.send(proto::client::Message::Meow).await;
+
+  inbound.join().await;
   endpoint.wait_idle().await;
 
   Ok(())
