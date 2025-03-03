@@ -2,7 +2,7 @@ use crate::{env, prelude::*};
 use tokio::{io::AsyncWriteExt, sync::mpsc};
 
 const CHANNEL_SIZE: usize = 8;
-const DEFAULT_BUFFER_SIZE: usize = 1024 * 1024;
+const DEFAULT_BUFFER_SIZE: usize = 1024 * 8;
 
 struct SendActor {
   rx: mpsc::Receiver<proto::client::Message>,

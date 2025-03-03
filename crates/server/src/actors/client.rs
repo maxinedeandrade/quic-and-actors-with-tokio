@@ -1,11 +1,7 @@
-use tokio::{
-  io::{AsyncReadExt, AsyncWriteExt},
-  sync::mpsc,
-};
-
+use tokio::{io::AsyncWriteExt, sync::mpsc};
 use crate::prelude::*;
 
-const DEFAULT_BUFFER_SIZE: usize = 1024 * 1024;
+const DEFAULT_BUFFER_SIZE: usize = 1024 * 8;
 const CHANNEL_SIZE: usize = 8;
 
 struct SendActor {
