@@ -25,12 +25,6 @@ impl SendActor {
 
     self
       .stream
-      .write_u32_le(buffer.len() as u32)
-      .await
-      .expect("Failed to write u32 to stream");
-
-    self
-      .stream
       .write_all(&buffer)
       .await
       .expect("Failed to write message to stream");
@@ -49,40 +43,34 @@ impl RecvActor {
     let mut buffer = Box::new([0u8; DEFAULT_BUFFER_SIZE]);
 
     loop {
-      let read = self
+      match self
         .stream
-        .read_u32_le()
+        .read(buffer.as_mut())
         .await
-        .expect("Failed to read u32 from stream") as usize;
+        .expect("Failed to read from stream")
+      {
+        Some(0) | None => continue,
+        Some(read) => {
+          let client_message =
+            bitcode::decode(&buffer[..read]).expect("Failed to decode ClientMessage");
 
-      if read == 0 {
-        continue;
+          self.dispatch.send(client_message).await;
+        }
       }
-
-      self
-        .stream
-        .read_exact(buffer.as_mut())
-        .await
-        .expect("Failed to read {} bytes");
-
-      log::info!("Received {} bytes", read);
-
-      let client_message =
-        bitcode::decode(&buffer[..read]).expect("Failed to decode client message");
-
-      self.dispatch.send(client_message).await;
     }
   }
 }
 
 pub struct Handle {
   tx: mpsc::Sender<proto::server::Message>,
+  join_handle: tokio::task::JoinHandle<()>,
 }
 
 impl Handle {
   pub async fn new(incoming: quinn::Incoming, dispatch: super::dispatch::Handle) -> Result<Self> {
+    let incoming = incoming.await?;
     let (tx, rx) = mpsc::channel(CHANNEL_SIZE);
-    let (send, recv) = incoming.await?.open_bi().await?;
+    let (send, recv) = incoming.accept_bi().await?;
 
     let send = SendActor { stream: send, rx };
     let recv = RecvActor {
@@ -90,9 +78,21 @@ impl Handle {
       dispatch,
     };
 
+    let join_handle = tokio::spawn(async move { recv.run().await });
     tokio::spawn(async move { send.run().await });
-    tokio::spawn(async move { recv.run().await });
 
-    Ok(Self { tx })
+    Ok(Self { tx, join_handle })
+  }
+
+  pub async fn send(&self, message: proto::server::Message) {
+    self
+      .tx
+      .send(message)
+      .await
+      .expect("Failed to send actor a message");
+  }
+
+  pub async fn join(self) {
+    self.join_handle.await.expect("Client actor panicked");
   }
 }

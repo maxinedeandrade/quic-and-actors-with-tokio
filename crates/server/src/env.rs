@@ -15,7 +15,7 @@ impl Env {
   const DEFAULT_LISTEN_ADDR: SocketAddr =
     SocketAddr::new(std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8456);
   const DEFAULT_CERT_CHAIN_PATH: &str = "cert_chain.pem";
-  const DEFAULT_KEY_PATH: &str = "key.der";
+  const DEFAULT_KEY_PATH: &str = "key.pem";
 }
 
 pub fn get() -> &'static Env {

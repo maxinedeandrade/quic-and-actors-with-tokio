@@ -12,7 +12,11 @@ impl Actor {
 
       let dispatch = self.dispatch.clone();
       tokio::spawn(async move {
-        let _client = super::client::Handle::new(incoming, dispatch);
+        let client = super::client::Handle::new(incoming, dispatch)
+          .await
+          .expect("Failed to create client actor");
+
+        client.join().await;
       });
     }
   }
@@ -32,6 +36,6 @@ impl Handle {
   }
 
   pub async fn join(self) {
-    self.join_handle.await.expect("Listener actor failed");
+    self.join_handle.await.expect("Listener actor panicked");
   }
 }

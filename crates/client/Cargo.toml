@@ -13,3 +13,5 @@ proto.workspace = true
 tokio = { version = "1.43.0", features = ["full"] }
 thiserror = "2.0.11"
 bitcode = "0.6.5"
+tokio-rustls = { version = "0.26.2", features = ["ring"] }
+rustls-pki-types = "1.11.0"
