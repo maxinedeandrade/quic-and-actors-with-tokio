@@ -40,4 +40,12 @@ impl Handle {
 
     Self { tx }
   }
+
+  pub async fn send(&self, message: proto::server::Message) {
+    self
+      .tx
+      .send(message)
+      .await
+      .expect("Failed to send message to actor");
+  }
 }
