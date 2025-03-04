@@ -43,8 +43,7 @@ async fn main() -> Result<(), crate::error::Error> {
 
   log::info!("Listening on {}", endpoint.local_addr()?);
 
-  let dispatch = actors::dispatch::Handle::new();
-  let listener = actors::listener::Handle::new(endpoint.clone(), dispatch);
+  let listener = actors::listener::Handle::new(endpoint.clone());
 
   listener.join().await;
   endpoint.wait_idle().await;

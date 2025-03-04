@@ -1,10 +1,11 @@
-use crate::prelude::*;
-use tokio::sync::{mpsc, oneshot};
+use super::outbound;
+use tokio::sync::mpsc;
 
 const CHANNEL_SIZE: usize = 16;
 
 struct Actor {
   rx: mpsc::Receiver<proto::client::Message>,
+  outbound: outbound::Handle,
 }
 
 impl Actor {
@@ -21,9 +22,9 @@ pub struct Handle {
 }
 
 impl Handle {
-  pub fn new() -> Self {
+  pub fn new(outbound: outbound::Handle) -> Self {
     let (tx, rx) = mpsc::channel(CHANNEL_SIZE);
-    let actor = Actor { rx };
+    let actor = Actor { rx, outbound };
 
     tokio::spawn(async move { actor.run().await });
 
